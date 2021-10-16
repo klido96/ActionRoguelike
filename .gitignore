@@ -78,3 +78,6 @@ DerivedDataCache/*
 *.pdb
 *.exp
 *.modules
+*.exp
+Plugins/Developer/RiderLink/Intermediate/Build/Win64/UE4Editor/Development/RD/UE4Editor-RD-0013.exp
+*.exp
