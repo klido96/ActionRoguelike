@@ -3,6 +3,7 @@
 
 #include "SBarrel.h"
 
+#include "DrawDebugHelpers.h"
 #include "PhysicsEngine/RadialForceComponent.h"
 
 // Sets default values
@@ -22,8 +23,28 @@ ASBarrel::ASBarrel()
 	RadialForceComp->Radius = 700.0f;
 	RadialForceComp->ImpulseStrength = 2000.0f;
 	RadialForceComp->bImpulseVelChange = true;
+	RadialForceComp->SetAutoActivate(false);
+	RadialForceComp->AddCollisionChannelToAffect(ECC_WorldDynamic);
 	
 
+}
+
+void ASBarrel::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+	StaticMeshComp->OnComponentHit.AddDynamic(this, &ASBarrel::OnActorHit);
+}
+
+void ASBarrel::OnActorHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
+	FVector NormalImpulse, const FHitResult& Hit)
+{
+	RadialForceComp->FireImpulse();
+
+	UE_LOG(LogTemp, Log, TEXT("OnActorHit in Explosive Barrel"));
+	UE_LOG(LogTemp, Warning, TEXT("OtherActor: %s, at game time: %f"), *GetNameSafe(OtherActor), GetWorld()->TimeSeconds);
+
+	FString CombinedString = FString::Printf(TEXT("Hit at location: %s"), *Hit.ImpactPoint.ToString());
+	DrawDebugString(GetWorld(), Hit.ImpactPoint, CombinedString, nullptr, FColor::Green, 2.0f, true);
 }
 
 // Called when the game starts or when spawned

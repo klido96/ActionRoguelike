@@ -3,6 +3,7 @@
 
 #include "SCharacter.h"
 
+#include "DrawDebugHelpers.h"
 #include "SInteractionComponent.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -103,12 +104,31 @@ void ASCharacter::PrimaryInteract()
 
 void ASCharacter::PrimaryAttack_TimeElapsed()
 {
-	FVector HandLocation = GetMesh()->GetSocketLocation("Muzzle_01");
+	if (ensureAlways(ProjectileClass))
+	{
+		FVector HandLocation = GetMesh()->GetSocketLocation("Muzzle_01");
+		FRotator CameraRotation = CameraComp->GetComponentRotation();
+		FVector CameraLocation = CameraComp->GetComponentLocation();
+		FVector CameraEnd = CameraLocation + CameraRotation.Vector() * 10000;
 	
-	FTransform SpawnTM = FTransform(GetControlRotation(), HandLocation);
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	SpawnParams.Instigator = this;
+		FHitResult Hit;
+		FRotator HitDirection;
+		bool bHitSomething = GetWorld()->LineTraceSingleByChannel(Hit, CameraLocation, CameraEnd, ECC_WorldStatic);
+		if (bHitSomething)
+		{
+			HitDirection = (Hit.ImpactPoint - HandLocation).Rotation();
+		}
+		else
+		{
+			HitDirection = (CameraEnd - HandLocation).Rotation();
+		}
 
-	GetWorld()->SpawnActor<AActor>(ProjectileClass, SpawnTM, SpawnParams);
+		FTransform SpawnTM = FTransform(HitDirection, HandLocation);
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		SpawnParams.Instigator = this;
+
+		GetWorld()->SpawnActor<AActor>(ProjectileClass, SpawnTM, SpawnParams);
+	}
+	
 }
