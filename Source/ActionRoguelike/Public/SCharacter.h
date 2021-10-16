@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "SCharacter.generated.h"
 
+class USInteractionComponent;
 class USpringArmComponent;
 class UCameraComponent;
 UCLASS()
@@ -28,6 +29,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere)
 	UCameraComponent* CameraComp;
+
+	UPROPERTY(VisibleAnywhere);
+	USInteractionComponent* InteractionComp;
 	
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -36,6 +40,7 @@ protected:
 	void MoveRight(float value);
 
 	void PrimaryAttack();
+	void PrimaryInteract();
 
 
 public:	
