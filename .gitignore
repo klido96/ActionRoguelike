@@ -1,9 +1,8 @@
 # Visual Studio 2015 user specific files
 .vs/
 
-# Rider
-*.pdb
 *.exp
+*.modules
 
 # Compiled Object files
 *.slo
@@ -76,3 +75,6 @@ Plugins/*/Intermediate/*
 
 # Cache files for the editor to use
 DerivedDataCache/*
+*.pdb
+*.exp
+*.modules
