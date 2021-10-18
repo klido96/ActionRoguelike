@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "SCharacter.generated.h"
 
+class USAttributeComponent;
 class USInteractionComponent;
 class USpringArmComponent;
 class UCameraComponent;
@@ -19,9 +20,19 @@ protected:
 	TSubclassOf<AActor> ProjectileClass;
 
 	UPROPERTY(EditAnywhere, Category = "Attack")
+	TSubclassOf<AActor> DashProjectileClass;
+
+	UPROPERTY(EditAnywhere, Category = "Attack")
+	TSubclassOf<AActor> BlackHoleProjectileClass;
+
+	UPROPERTY(EditAnywhere, Category = "Attack")
 	UAnimMontage* AttackAnim;
 
 	FTimerHandle TimerHandle_PrimaryAttack;
+	FTimerHandle TimerHandle_Dash;
+	FTimerHandle TimerHandle_BlackHole;
+
+	float AttackAnimDelay;
 
 public:
 	// Sets default values for this character's properties
@@ -37,6 +48,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere);
 	USInteractionComponent* InteractionComp;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	USAttributeComponent* AttributeComp;
 	
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -44,8 +58,19 @@ protected:
 	void MoveForward(float value);
 	void MoveRight(float value);
 
+	// Primary Attack
 	void PrimaryAttack();
 	void PrimaryAttack_TimeElapsed();
+
+	// Dash Attack
+	void Dash();
+	void Dash_TimeElapsed();
+
+	// BlackHole Attack
+	void BlackHole();
+	void BlackHole_TimeElapsed();
+
+	void SpawnProjectile(TSubclassOf<AActor> ClassToSpawn);
 
 	void PrimaryInteract();
 

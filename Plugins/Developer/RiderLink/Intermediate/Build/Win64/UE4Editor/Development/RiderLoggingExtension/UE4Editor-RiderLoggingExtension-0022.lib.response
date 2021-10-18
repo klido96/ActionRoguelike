@@ -6,7 +6,6 @@
 /NAME:"UE4Editor-RiderLoggingExtension-0022.dll"
 /IGNORE:4221
 /NODEFAULTLIB
-"H:\Epic\GitHub\ActionRoguelike\Plugins\Developer\RiderLink\Intermediate\Build\Win64\UE4Editor\Development\RiderLoggingExtension\RiderLoggingExtension.cpp.obj"
 "H:\Epic\GitHub\ActionRoguelike\Plugins\Developer\RiderLink\Intermediate\Build\Win64\UE4Editor\Development\RiderLoggingExtension\Module.RiderLoggingExtension.cpp.obj"
 "H:\Epic\GitHub\ActionRoguelike\Plugins\Developer\RiderLink\Intermediate\Build\Win64\UE4Editor\Development\RiderLoggingExtension\Default.rc2.res"
 /OUT:"H:\Epic\GitHub\ActionRoguelike\Plugins\Developer\RiderLink\Intermediate\Build\Win64\UE4Editor\Development\RiderLoggingExtension\UE4Editor-RiderLoggingExtension-0022.lib"

@@ -4,13 +4,15 @@
 #include "SCharacter.h"
 
 #include "DrawDebugHelpers.h"
+#include "SAttributeComponent.h"
 #include "SInteractionComponent.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 
 // Sets default values
-ASCharacter::ASCharacter() 
+ASCharacter::ASCharacter() :
+	AttackAnimDelay(0.2f)
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -23,6 +25,8 @@ ASCharacter::ASCharacter()
 	CameraComp->SetupAttachment(SpringArmComp);
 
 	InteractionComp = CreateDefaultSubobject<USInteractionComponent>("InteractionComp");
+
+	AttributeComp = CreateDefaultSubobject<USAttributeComponent>("AttributeComp");
 
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 
@@ -60,6 +64,10 @@ void ASCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	PlayerInputComponent->BindAction("PrimaryAttack", IE_Pressed, this, &ASCharacter::PrimaryAttack);
 
 	PlayerInputComponent->BindAction("PrimaryInteract", IE_Pressed, this, &ASCharacter::PrimaryInteract);
+
+	PlayerInputComponent->BindAction("Dash", IE_Pressed, this, &ASCharacter::Dash);
+	
+	PlayerInputComponent->BindAction("BlackHole", IE_Pressed, this, &ASCharacter::BlackHole);
 }
 
 void ASCharacter::MoveForward(float value)
@@ -82,53 +90,98 @@ void ASCharacter::MoveRight(float value)
 	AddMovementInput(RightVector, value);
 }
 
-void ASCharacter::PrimaryAttack()
-{
-	PlayAnimMontage(AttackAnim);
-
-	
-	GetWorldTimerManager().SetTimer(
-		TimerHandle_PrimaryAttack, this, &ASCharacter::PrimaryAttack_TimeElapsed, 0.2f);
-	
-	
-}
-
 void ASCharacter::PrimaryInteract()
 {
 	if (InteractionComp)
 	{
 		InteractionComp->PrimaryInteract();
 	}
-	
+}
+
+void ASCharacter::PrimaryAttack()
+{
+	PlayAnimMontage(AttackAnim);
+	GetWorldTimerManager().SetTimer(
+		TimerHandle_PrimaryAttack, this, &ASCharacter::PrimaryAttack_TimeElapsed, AttackAnimDelay);
 }
 
 void ASCharacter::PrimaryAttack_TimeElapsed()
 {
-	if (ensureAlways(ProjectileClass))
+	SpawnProjectile(ProjectileClass);
+}
+
+void ASCharacter::Dash()
+{
+	
+	PlayAnimMontage(AttackAnim);
+	GetWorldTimerManager().SetTimer(TimerHandle_Dash, this, &ASCharacter::Dash_TimeElapsed, AttackAnimDelay);
+}
+
+void ASCharacter::Dash_TimeElapsed()
+{
+	SpawnProjectile(DashProjectileClass);
+}
+
+void ASCharacter::BlackHole()
+{
+	PlayAnimMontage(AttackAnim);
+	GetWorldTimerManager().SetTimer(TimerHandle_BlackHole, this, &ASCharacter::BlackHole_TimeElapsed, AttackAnimDelay);
+}
+
+void ASCharacter::BlackHole_TimeElapsed()
+{
+	SpawnProjectile(BlackHoleProjectileClass);
+}
+
+void ASCharacter::SpawnProjectile(TSubclassOf<AActor> ClassToSpawn)
+{
+	
+	if (ensureAlways(ClassToSpawn))
 	{
 		FVector HandLocation = GetMesh()->GetSocketLocation("Muzzle_01");
-		FRotator CameraRotation = CameraComp->GetComponentRotation();
-		FVector CameraLocation = CameraComp->GetComponentLocation();
-		FVector CameraEnd = CameraLocation + CameraRotation.Vector() * 10000;
-	
-		FHitResult Hit;
-		FRotator HitDirection;
-		bool bHitSomething = GetWorld()->LineTraceSingleByChannel(Hit, CameraLocation, CameraEnd, ECC_WorldStatic);
-		if (bHitSomething)
-		{
-			HitDirection = (Hit.ImpactPoint - HandLocation).Rotation();
-		}
-		else
-		{
-			HitDirection = (CameraEnd - HandLocation).Rotation();
-		}
 
-		FTransform SpawnTM = FTransform(HitDirection, HandLocation);
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 		SpawnParams.Instigator = this;
 
-		GetWorld()->SpawnActor<AActor>(ProjectileClass, SpawnTM, SpawnParams);
+		FHitResult Hit;
+		FVector TraceStart = CameraComp->GetComponentLocation();
+		FVector TraceEnd = TraceStart + GetControlRotation().Vector() * 5000;
+
+		FCollisionShape Shape;
+		Shape.SetSphere(20.0f);
+
+		// Ignore Player
+		FCollisionQueryParams Params;
+		Params.AddIgnoredActor(this);
+
+		FCollisionObjectQueryParams ObjParams;
+		ObjParams.AddObjectTypesToQuery(ECC_WorldDynamic);
+		ObjParams.AddObjectTypesToQuery(ECC_WorldStatic);
+		ObjParams.AddObjectTypesToQuery(ECC_Pawn);
+
+		FRotator HitDirection;
+
+		// Fix Camera
+		FVector DirectionVector = GetControlRotation().Vector();
+		float RunningParam = FVector::DotProduct(DirectionVector, HandLocation - TraceStart) / FVector::DotProduct(DirectionVector, DirectionVector);
+		FVector NewTraceStart = TraceStart + (RunningParam * DirectionVector);
+		
+		DrawDebugLine(GetWorld(), NewTraceStart, TraceEnd, FColor::Emerald, false, 5.0f, 0, 2.0f);
+		bool bHitSomething = GetWorld()->SweepSingleByObjectType(Hit, NewTraceStart, TraceEnd,
+			FQuat::Identity, ObjParams, Shape, Params);
+		if (bHitSomething)
+		{
+			// adjust location to end at cross-hair look at
+			HitDirection = FRotationMatrix::MakeFromX(Hit.ImpactPoint - HandLocation).Rotator();
+		}
+		else
+		{
+			// fall-back to trace end distance
+			HitDirection = FRotationMatrix::MakeFromX(TraceEnd - HandLocation).Rotator();
+		}
+
+		FTransform SpawnTM = FTransform(HitDirection, HandLocation);
+		GetWorld()->SpawnActor<AActor>(ClassToSpawn, SpawnTM, SpawnParams);
 	}
-	
 }
